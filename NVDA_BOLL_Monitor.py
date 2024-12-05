@@ -7,8 +7,8 @@ import asyncio
 from telegram.error import TelegramError
 
 # Telegram 配置
-TELEGRAM_BOT_TOKEN = "Put your token here"
-CHAT_ID = "Put your chat id here"
+TELEGRAM_BOT_TOKEN = ""
+CHAT_ID = ""
 
 # 创建新的事件循环
 loop = asyncio.new_event_loop()
@@ -31,7 +31,7 @@ def send_message(message):
 def fetch_nvda_data():
     """获取 NVDA 日K数据并计算布林带"""
     # 获取最近一个月的日K数据
-    data = yf.download('PLTR', period='1mo', interval='1d')
+    data = yf.download('NVDA', period='1mo', interval='1d')
     print("\n获取到的NVDA日K数据：")
     print(data.tail())  # 显示最新的几天数据
     
@@ -63,22 +63,26 @@ def monitor_nvda():
         price = float(latest_data['Close'])
         upper = float(latest_data['Upper'])
         lower = float(latest_data['Lower'])
+        middle = float(latest_data['SMA'])
         
-        # 设置2美元的误差范围
+        # 设置误差范围
         ERROR_MARGIN = 2.0
+        MIDDLE_ERROR_MARGIN = 0.5  # 中轨使用更小的误差范围
 
-        # 检查是否触及布林带（带误差范围）
+        # 检查是否触及布林带
         message = None
         if price >= (upper - ERROR_MARGIN):
-            message = f"PLTR 股价 ({price:.2f}) 接近或触及布林线上轨 ({upper:.2f})"
+            message = f"NVDA 股价 ({price:.2f}) 接近或触及布林线上轨 ({upper:.2f})"
         elif price <= (lower + ERROR_MARGIN):
-            message = f"PLTR 股价 ({price:.2f}) 接近或触及布林线下轨 ({lower:.2f})"
+            message = f"NVDA 股价 ({price:.2f}) 接近或触及布林线下轨 ({lower:.2f})"
+        elif abs(price - middle) <= MIDDLE_ERROR_MARGIN:
+            message = f"NVDA 股价 ({price:.2f}) 接近或触及布林线中轨 ({middle:.2f})"
         
         if message:
             print(message)
             send_message(message)
         else:
-            status = f"当前价格：{price:.2f}，上轨：{upper:.2f}，下轨：{lower:.2f}"
+            status = f"当前价格：{price:.2f}，上轨：{upper:.2f}，中轨：{middle:.2f}，下轨：{lower:.2f}"
             print(status)
             #send_message(status)
     except Exception as e:
